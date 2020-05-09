@@ -7,12 +7,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <time.h>
+#include <signal.h>
 #include "err.h"
 
 #define BSIZE         1024
 #define REPEAT_COUNT  30
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 
     /* argumenty wywołania programu */
     char *multicast_dotted_address;
@@ -35,7 +36,7 @@ int main (int argc, char *argv[]) {
     if (argc != 3)
         fatal("Usage: %s multicast_dotted_address local_port\n", argv[0]);
     multicast_dotted_address = argv[1];
-    local_port = (in_port_t)atoi(argv[2]);
+    local_port = (in_port_t) atoi(argv[2]);
 
     /* otwarcie gniazda */
     sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -48,14 +49,14 @@ int main (int argc, char *argv[]) {
         fprintf(stderr, "ERROR: inet_aton - invalid multicast address\n");
         exit(EXIT_FAILURE);
     }
-    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void*)&ip_mreq, sizeof ip_mreq) < 0)
+    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void *) &ip_mreq, sizeof ip_mreq) < 0)
         syserr("setsockopt");
 
     /* ustawienie adresu i portu lokalnego */
     local_address.sin_family = AF_INET;
     local_address.sin_addr.s_addr = htonl(INADDR_ANY);
     local_address.sin_port = htons(local_port);
-    if (bind(sock, (struct sockaddr *)&local_address, sizeof local_address) < 0)
+    if (bind(sock, (struct sockaddr *) &local_address, sizeof local_address) < 0)
         syserr("bind");
 
 
@@ -75,13 +76,11 @@ int main (int argc, char *argv[]) {
             length = strnlen(buffer, BSIZE);
             if (sendto(sock, buffer, length, 0, &src_addr, addrlen) < 0)
                 syserr("sendto");
-
-            break;
         }
     }
 
     /* odłączenie od grupy rozsyłania */
-    if (setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, (void*)&ip_mreq, sizeof ip_mreq) < 0)
+    if (setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, (void *) &ip_mreq, sizeof ip_mreq) < 0)
         syserr("setsockopt");
 
     /* koniec */
